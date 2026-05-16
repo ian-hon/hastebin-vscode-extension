@@ -1,0 +1,73 @@
+{
+  "name": "hastebin-extension",
+  "displayName": "hastebin-extension",
+  "description": "",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.120.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "hastebin.shareSelection",
+        "title": "Hastebin: Share Selection"
+      },
+      {
+        "command": "hastebin.shareFile",
+        "title": "Hastebin: Share File"
+      },
+      {
+        "command": "hastebin.shareMultiFile",
+        "title": "Hastebin: Share Multiple Files"
+      }
+    ],
+    "configuration": {
+      "title": "Hastebin",
+      "properties": {
+        "hastebin.apiUrl": {
+          "type": "string",
+          "default": "https://backend.ianhon.com/hastebin",
+          "description": "Hastebin API base URL"
+        },
+        "hastebin.siteUrl": {
+          "type": "string",
+          "default": "https://hastebin.ianhon.com",
+          "description": "Hastebin website URL for viewing pastes"
+        },
+        "hastebin.openInBrowser": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically open paste in browser after creation"
+        },
+        "hastebin.commentsEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable comments on created pastes"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.120.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "typescript-eslint": "^8.56.1",
+    "eslint": "^9.39.3",
+    "typescript": "^5.9.3",
+    "@vscode/test-cli": "^0.0.12",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}
