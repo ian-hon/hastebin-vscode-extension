@@ -2,12 +2,13 @@
   "name": "hastebin-extension",
   "displayName": "hastebin-extension",
   "description": "",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "publisher": "IanHon",
   "repository": "https://github.com/ian-hon/hastebin-vscode-extension",
   "engines": {
     "vscode": "^1.120.0"
   },
+  "icon": "images/hastebin.png",
   "categories": [
     "Other"
   ],
