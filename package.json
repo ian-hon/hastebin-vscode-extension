@@ -3,6 +3,8 @@
   "displayName": "hastebin-extension",
   "description": "",
   "version": "0.0.1",
+  "publisher": "IanHon",
+  "repository": "https://github.com/ian-hon/hastebin-vscode-extension",
   "engines": {
     "vscode": "^1.120.0"
   },
