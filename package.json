@@ -1,6 +1,6 @@
 {
-  "name": "hastebin-extension",
-  "displayName": "hastebin-extension",
+  "name": "share-vscode-to-hastebin",
+  "displayName": "Share VSCode to Hastebin",
   "description": "",
   "version": "0.1.0",
   "publisher": "IanHon",
