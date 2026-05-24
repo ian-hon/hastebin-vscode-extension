@@ -27,6 +27,14 @@
       {
         "command": "hastebin.shareMultiFile",
         "title": "Hastebin: Share Multiple Files"
+      },
+      {
+        "command": "hastebin.shareFileEncrypted",
+        "title": "Hastebin: Share File (Encrypted)"
+      },
+      {
+        "command": "hastebin.shareMultiFileEncrypted",
+        "title": "Hastebin: Share Multiple Files (Encrypted)"
       }
     ],
     "configuration": {

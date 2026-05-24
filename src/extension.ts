@@ -3,10 +3,12 @@ import * as https from 'https';
 import * as http from 'http';
 import { URL } from 'url';
 import { toHex } from './utils';
+import { encrypt, ALGO_NAME } from './crypto';
 
 interface PasteFile {
 	fileName: string;
 	content: string;
+	algo?: string;
 }
 
 interface CreatePasteRequest {
@@ -117,13 +119,103 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	);
 
-	context.subscriptions.push(shareSelectionCommand, shareFileCommand, shareMultiFileCommand);
+	// #region encrypted shares
+	const shareFileEncryptedCommand = vscode.commands.registerCommand(
+		'hastebin.shareFileEncrypted',
+		async () => {
+			const editor = vscode.window.activeTextEditor;
+			if (!editor) {
+				vscode.window.showErrorMessage('No active editor found.');
+				return;
+			}
+
+			const fileContent = editor.document.getText();
+			const fileName = editor.document.fileName.split('/').pop() || 'Untitled';
+
+			if (!fileContent) {
+				vscode.window.showWarningMessage('File is empty.');
+				return;
+			}
+
+			const password = await vscode.window.showInputBox({
+				prompt: 'Enter a password to encrypt the paste',
+				password: true,
+				placeHolder: 'Password',
+				ignoreFocusOut: true
+			});
+
+			if (!password) {
+				vscode.window.showWarningMessage('Password is required for encryption.');
+				return;
+			}
+
+			await shareToPastebin([{
+				fileName: fileName,
+				content: fileContent
+			}], password);
+		}
+	);
+
+	const shareMultiFileEncryptedCommand = vscode.commands.registerCommand(
+		'hastebin.shareMultiFileEncrypted',
+		async () => {
+			const uris = await vscode.window.showOpenDialog({
+				canSelectMany: true,
+				canSelectFiles: true,
+				canSelectFolders: false,
+				openLabel: 'Share to Hastebin (Encrypted)'
+			});
+
+			if (!uris || uris.length === 0) {
+				vscode.window.showWarningMessage('No files selected.');
+				return;
+			}
+
+			const files: PasteFile[] = [];
+			for (const uri of uris) {
+				const document = await vscode.workspace.openTextDocument(uri);
+				const fileName = uri.path.split('/').pop() || 'Untitled';
+				files.push({
+					fileName,
+					content: document.getText()
+				});
+			}
+
+			if (files.length === 0 || files.every(f => !f.content)) {
+				vscode.window.showWarningMessage('All selected files are empty.');
+				return;
+			}
+
+			const password = await vscode.window.showInputBox({
+				prompt: 'Enter a password to encrypt the paste',
+				password: true,
+				placeHolder: 'Password',
+				ignoreFocusOut: true
+			});
+
+			if (!password) {
+				vscode.window.showWarningMessage('Password is required for encryption.');
+				return;
+			}
+
+			await shareToPastebin(files, password);
+		}
+	);
+	// #endregion
+
+	context.subscriptions.push(
+		shareSelectionCommand,
+		shareFileCommand,
+		shareMultiFileCommand,
+		shareFileEncryptedCommand,
+		shareMultiFileEncryptedCommand
+	);
 }
 
 // This method is called when your extension is deactivated
 export function deactivate() { }
 
-async function shareToPastebin(files: PasteFile[]): Promise<void> {
+async function shareToPastebin(files: PasteFile[], password?: string): Promise<void> {
 	// https://code.visualstudio.com/api/references/vscode-api#workspace.getConfiguration
 	const config = vscode.workspace.getConfiguration('hastebin');
 	const apiUrl = config.get<string>('apiUrl', 'https://backend.ianhon.com/hastebin');
@@ -134,13 +226,28 @@ async function shareToPastebin(files: PasteFile[]): Promise<void> {
 	try {
 		vscode.window.setStatusBarMessage('$(sync~spin) Sharing to Hastebin...', 3000);
 
+		// Encrypt files if password is provided
+		let filesToSend = files;
+		if (password) {
+			filesToSend = await Promise.all(
+				files.map(async (file) => ({
+					fileName: file.fileName,
+					content: await encrypt(file.content, password),
+					algo: ALGO_NAME
+				}))
+			);
+		}
+
 		// Serialize the files array as JSON string
 		const pasteId = toHex(await createPaste(apiUrl, {
-			content: JSON.stringify(files),
+			content: JSON.stringify(filesToSend),
 			comments_enabled: commentsEnabled,
 		}));
 
-		const pasteUrl = `${siteUrl}/${pasteId}`;
+		let pasteUrl = `${siteUrl}/${pasteId}`;
+		if (password) {
+			pasteUrl += `?password=${encodeURIComponent(password)}`;
+		}
 
 		// https://code.visualstudio.com/api/references/vscode-api#env.clipboard
 		// all the damn docs say is 'clipboard'
@@ -152,8 +259,12 @@ async function shareToPastebin(files: PasteFile[]): Promise<void> {
 			await vscode.env.openExternal(vscode.Uri.parse(pasteUrl));
 		}
 
+		const message = password
+			? 'Encrypted Hastebin link (with password) copied to clipboard!'
+			: 'Hastebin link copied to clipboard!';
+
 		vscode.window.showInformationMessage(
-			`Hastebin link copied to clipboard!`,
+			message,
 			'Open'
 		).then(selection => {
 			if (selection === 'Open') {
